@@ -35,8 +35,8 @@ public class ArticleListDto
     public string AuthorName { get; set; } = string.Empty;
     public int ViewCount { get; set; }
     public DateTime? PublishedAt { get; set; }
-    public DateTime CreatedAt { get; set; } // Add this
-    public bool IsPublished { get; set; } // Add this
+    public DateTime CreatedAt { get; set; } 
+    public bool IsPublished { get; set; } 
     public string? PrimaryImageUrl { get; set; }
 }
 
