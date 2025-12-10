@@ -14,69 +14,105 @@ namespace TeretnjaciBa.Controllers;
 public class ArticlesController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
+    private readonly ILogger<ArticlesController> _logger;
 
-    public ArticlesController(ApplicationDbContext context)
+    public ArticlesController(ApplicationDbContext context, ILogger<ArticlesController> logger)
     {
         _context = context;
+        _logger = logger;
     }
 
-    // GET: api/articles
+    // ArticlesController.cs
     [HttpGet]
-    public async Task<ActionResult<PagedResponse<ArticleListDto>>> GetArticles(
-        [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 12,
+    public async Task<IActionResult> GetArticles(
         [FromQuery] string? category = null,
-        [FromQuery] string? search = null)
+        [FromQuery] string? search = null,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 12)
     {
-        var query = _context.Articles
-            .Include(a => a.Category)
-            .Include(a => a.Author)
-            .Include(a => a.Images)
-            .Where(a => a.IsPublished) 
-            .AsQueryable();
-
-        if (!string.IsNullOrEmpty(category))
+        try
         {
-            query = query.Where(a => a.Category.Slug == category);
-        }
+            var query = _context.Articles
+                .Include(a => a.Category)
+                .Include(a => a.Author)
+                .Include(a => a.Images)
+                .Where(a => a.IsPublished)
+                .AsQueryable();
 
-        if (!string.IsNullOrEmpty(search))
-        {
-            query = query.Where(a => a.Title.Contains(search) || a.Content.Contains(search));
-        }
-
-        var totalCount = await query.CountAsync();
-        var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
-
-        var articles = await query
-            .OrderByDescending(a => a.PublishedAt)
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .Select(a => new ArticleListDto
+            if (!string.IsNullOrEmpty(category))
             {
-                Id = a.Id,
-                Title = a.Title,
-                Slug = a.Slug,
-                CategoryName = a.Category.Name,
-                CategorySlug = a.Category.Slug,
-                AuthorName = a.Author.FullName,
-                ViewCount = a.ViewCount,
-                PublishedAt = a.PublishedAt,
-                PrimaryImageUrl = a.Images
-                    .Where(i => i.IsPrimary)
-                    .Select(i => i.FilePath)
-                    .FirstOrDefault() ?? a.Images.Select(i => i.FilePath).FirstOrDefault()
-            })
-            .ToListAsync();
+                query = query.Where(a => a.Category.Slug == category);
+            }
 
-        return Ok(new PagedResponse<ArticleListDto>
+            if (!string.IsNullOrEmpty(search))
+            {
+                query = query.Where(a =>
+                    a.Title.Contains(search) ||
+                    a.Content.Contains(search)
+                );
+            }
+
+            query = query.OrderByDescending(a => a.PublishedAt);
+
+            var totalItems = await query.CountAsync();
+            var totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
+
+            var articles = await query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(a => new
+                {
+                    a.Id,
+                    a.Title,
+                    a.Slug,
+                    a.Content,
+                    CategoryName = a.Category.Name,
+                    CategorySlug = a.Category.Slug,
+                    a.CategoryId,
+                    AuthorName = a.Author.Username,
+                    a.AuthorId,
+                    a.ViewCount,
+                    a.IsPublished,
+                    a.PublishedAt,
+                    a.CreatedAt,
+                    a.UpdatedAt,
+                    PrimaryImageUrl = a.Images
+                        .Where(img => img.IsPrimary)
+                        .Select(img => img.FilePath)
+                        .FirstOrDefault(),
+                    Images = a.Images.Select(img => new
+                    {
+                        img.Id,
+                        img.FileName,
+                        Url = img.FilePath,
+                        img.IsPrimary
+                    }).ToList()
+                })
+                .ToListAsync();
+
+            return Ok(new
+            {
+                success = true,
+                data = articles,
+                pagination = new
+                {
+                    page,
+                    pageSize,
+                    totalItems,
+                    totalPages
+                }
+            });
+        }
+        catch (Exception ex)
         {
-            Data = articles,
-            Page = page,
-            PageSize = pageSize,
-            TotalCount = totalCount,
-            TotalPages = totalPages
-        });
+            _logger.LogError(ex, "Error getting articles");
+            return StatusCode(500, new
+            {
+                success = false,
+                message = "Error retrieving articles",
+                error = ex.Message
+            });
+        }
     }
 
     // GET: api/articles/admin
