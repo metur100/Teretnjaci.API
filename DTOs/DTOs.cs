@@ -56,8 +56,8 @@ public class ArticleListDto
     public string AuthorName { get; set; } = string.Empty;
     public int ViewCount { get; set; }
     public DateTime? PublishedAt { get; set; }
-    public DateTime CreatedAt { get; set; } 
-    public bool IsPublished { get; set; } 
+    public DateTime CreatedAt { get; set; }
+    public bool IsPublished { get; set; }
     public string? PrimaryImageUrl { get; set; }
 }
 
@@ -70,11 +70,11 @@ public class ArticleDetailDto
     public string? Summary { get; set; }
     public string CategoryName { get; set; } = string.Empty;
     public string CategorySlug { get; set; } = string.Empty;
-    public int CategoryId { get; set; } // Add this
+    public int CategoryId { get; set; }
     public string AuthorName { get; set; } = string.Empty;
     public int ViewCount { get; set; }
     public DateTime? PublishedAt { get; set; }
-    public bool IsPublished { get; set; } // Add this
+    public bool IsPublished { get; set; }
     public List<ImageDto> Images { get; set; } = new();
 }
 
@@ -112,6 +112,13 @@ public class ImageDto
     public string FileName { get; set; } = string.Empty;
     public string Url { get; set; } = string.Empty;
     public bool IsPrimary { get; set; }
+}
+
+// Inline Image DTO (for rich text editor images)
+public class InlineImageDto
+{
+    public string Url { get; set; } = string.Empty;
+    public string FileName { get; set; } = string.Empty;
 }
 
 // User Management DTOs

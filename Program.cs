@@ -18,8 +18,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 // Add Services
 builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<IFileService, FileService>();
-
+builder.Services.AddHttpClient<IImgBBService, ImgBBService>();
 // Add JWT Authentication
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
 var key = Encoding.UTF8.GetBytes(jwtSettings["Secret"] ?? throw new InvalidOperationException("JWT Secret not configured"));
