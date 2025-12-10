@@ -47,7 +47,7 @@ public class UsersController : ControllerBase
 
     // POST: api/users
     [HttpPost]
-    public async Task<ActionResult<ApiResponse<UserDto>>> CreateAdmin([FromBody] CreateAdminRequest request)
+    public async Task<ActionResult<ApiResponse<UserDto>>> CreateUser([FromBody] CreateUserRequest request)
     {
         // Check if username already exists
         if (await _context.Users.AnyAsync(u => u.Username == request.Username))
@@ -69,13 +69,23 @@ public class UsersController : ControllerBase
             });
         }
 
+        // Validate role
+        if (request.Role != UserRoles.Admin && request.Role != UserRoles.Owner)
+        {
+            return BadRequest(new ApiResponse<UserDto>
+            {
+                Success = false,
+                Message = "Nevažeća uloga. Dozvoljene uloge: Admin, Owner"
+            });
+        }
+
         var user = new User
         {
             Username = request.Username,
             PasswordHash = _authService.HashPassword(request.Password),
             FullName = request.FullName,
             Email = request.Email,
-            Role = UserRoles.Admin,
+            Role = request.Role,
             IsActive = true,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
@@ -87,7 +97,7 @@ public class UsersController : ControllerBase
         return Ok(new ApiResponse<UserDto>
         {
             Success = true,
-            Message = "Admin je uspješno kreiran",
+            Message = $"Korisnik ({request.Role}) je uspješno kreiran",
             Data = new UserDto
             {
                 Id = user.Id,
@@ -100,9 +110,8 @@ public class UsersController : ControllerBase
         });
     }
 
-    // PUT: api/users/{id}
     [HttpPut("{id}")]
-    public async Task<ActionResult<ApiResponse<UserDto>>> UpdateAdmin(int id, [FromBody] UpdateAdminRequest request)
+    public async Task<ActionResult<ApiResponse<UserDto>>> UpdateUser(int id, [FromBody] UpdateUserRequest request)
     {
         var user = await _context.Users.FindAsync(id);
         if (user == null)
@@ -114,27 +123,83 @@ public class UsersController : ControllerBase
             });
         }
 
-        // Prevent updating owner
-        if (user.Role == UserRoles.Owner)
+        var currentUserRole = User.Claims.FirstOrDefault(c => c.Type == "role")?.Value;
+        var currentUserId = int.Parse(User.Claims.FirstOrDefault(c => c.Type == "userId")?.Value ?? "0");
+
+        // Check if username is being changed and if it already exists
+        if (!string.IsNullOrEmpty(request.Username) && request.Username != user.Username)
         {
-            return BadRequest(new ApiResponse<UserDto>
+            if (await _context.Users.AnyAsync(u => u.Username == request.Username))
             {
-                Success = false,
-                Message = "Vlasnik ne može biti ažuriran"
-            });
+                return BadRequest(new ApiResponse<UserDto>
+                {
+                    Success = false,
+                    Message = "Korisničko ime već postoji"
+                });
+            }
+            user.Username = request.Username;
+        }
+
+        // Check if email is being changed and if it already exists
+        if (!string.IsNullOrEmpty(request.Email) && request.Email != user.Email)
+        {
+            if (await _context.Users.AnyAsync(u => u.Email == request.Email))
+            {
+                return BadRequest(new ApiResponse<UserDto>
+                {
+                    Success = false,
+                    Message = "Email već postoji"
+                });
+            }
+            user.Email = request.Email;
         }
 
         user.FullName = request.FullName;
-        user.Email = request.Email;
         user.IsActive = request.IsActive;
         user.UpdatedAt = DateTime.UtcNow;
+
+        // Handle role changes - only Owners can change roles
+        if (!string.IsNullOrEmpty(request.Role) && request.Role != user.Role)
+        {
+            // Validate role
+            if (request.Role != UserRoles.Admin && request.Role != UserRoles.Owner)
+            {
+                return BadRequest(new ApiResponse<UserDto>
+                {
+                    Success = false,
+                    Message = "Nevažeća uloga. Dozvoljene uloge: Admin, Owner"
+                });
+            }
+
+            // Only Owners can change roles
+            if (currentUserRole != UserRoles.Owner)
+            {
+                return BadRequest(new ApiResponse<UserDto>
+                {
+                    Success = false,
+                    Message = "Samo Owner može mijenjati uloge korisnika"
+                });
+            }
+
+            // Prevent users from changing their own role
+            if (user.Id == currentUserId)
+            {
+                return BadRequest(new ApiResponse<UserDto>
+                {
+                    Success = false,
+                    Message = "Ne možete mijenjati svoju ulogu"
+                });
+            }
+
+            user.Role = request.Role;
+        }
 
         await _context.SaveChangesAsync();
 
         return Ok(new ApiResponse<UserDto>
         {
             Success = true,
-            Message = "Admin je uspješno ažuriran",
+            Message = "Korisnik je uspješno ažuriran",
             Data = new UserDto
             {
                 Id = user.Id,
@@ -149,7 +214,7 @@ public class UsersController : ControllerBase
 
     // DELETE: api/users/{id}
     [HttpDelete("{id}")]
-    public async Task<ActionResult<ApiResponse<object>>> DeleteAdmin(int id)
+    public async Task<ActionResult<ApiResponse<object>>> DeleteUser(int id)
     {
         var user = await _context.Users.FindAsync(id);
         if (user == null)
@@ -161,13 +226,25 @@ public class UsersController : ControllerBase
             });
         }
 
-        // Prevent deleting owner
-        if (user.Role == UserRoles.Owner)
+        // Prevent deleting yourself
+        var currentUserId = int.Parse(User.Claims.FirstOrDefault(c => c.Type == "userId")?.Value ?? "0");
+        if (user.Id == currentUserId)
         {
             return BadRequest(new ApiResponse<object>
             {
                 Success = false,
-                Message = "Vlasnik ne može biti obrisan"
+                Message = "Ne možete obrisati svoj nalog"
+            });
+        }
+
+        // Prevent non-owners from deleting owners
+        var currentUserRole = User.Claims.FirstOrDefault(c => c.Type == "role")?.Value;
+        if (user.Role == UserRoles.Owner && currentUserRole != UserRoles.Owner)
+        {
+            return BadRequest(new ApiResponse<object>
+            {
+                Success = false,
+                Message = "Samo Owner može brisati druge Ownere"
             });
         }
 
@@ -177,7 +254,7 @@ public class UsersController : ControllerBase
         return Ok(new ApiResponse<object>
         {
             Success = true,
-            Message = "Admin je uspješno obrisan"
+            Message = "Korisnik je uspješno obrisan"
         });
     }
 }

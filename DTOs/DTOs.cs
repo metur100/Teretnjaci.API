@@ -1,3 +1,5 @@
+using TeretnjaciBa.Models;
+
 namespace TeretnjaciBa.DTOs;
 
 // Authentication DTOs
@@ -11,6 +13,25 @@ public class LoginResponse
 {
     public string Token { get; set; } = string.Empty;
     public UserDto User { get; set; } = null!;
+}
+
+// DTO Classes
+public class CreateUserRequest
+{
+    public string Username { get; set; } = string.Empty;
+    public string Password { get; set; } = string.Empty;
+    public string FullName { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public string Role { get; set; } = UserRoles.Admin; // Default to Admin
+}
+
+public class UpdateUserRequest
+{
+    public string? Username { get; set; }
+    public string FullName { get; set; }
+    public string Email { get; set; }
+    public string? Role { get; set; }  // Make nullable if not always required
+    public bool IsActive { get; set; }
 }
 
 public class UserDto
