@@ -28,13 +28,11 @@ public class ArticlesController : ControllerBase
         [FromQuery] string? category = null,
         [FromQuery] string? search = null)
     {
-        // For public access, always show only published articles
-        // Admin users will see both published and draft in their admin panel
         var query = _context.Articles
             .Include(a => a.Category)
             .Include(a => a.Author)
             .Include(a => a.Images)
-            .Where(a => a.IsPublished) // Always filter published for public API
+            .Where(a => a.IsPublished) 
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(category))
@@ -258,13 +256,11 @@ public class ArticlesController : ControllerBase
         });
     }
 
-    // PUT: api/articles/{id}
     [Authorize(Roles = "Owner,Admin")]
     [HttpPut("{id}")]
     public async Task<ActionResult<ApiResponse<ArticleDetailDto>>> UpdateArticle(int id, [FromBody] UpdateArticleRequest request)
     {
         var article = await _context.Articles
-            .Include(a => a.Category)
             .Include(a => a.Author)
             .Include(a => a.Images)
             .FirstOrDefaultAsync(a => a.Id == id);
@@ -278,20 +274,38 @@ public class ArticlesController : ControllerBase
             });
         }
 
+        // Validate category exists
+        var category = await _context.Categories.FindAsync(request.CategoryId);
+        if (category == null)
+        {
+            return BadRequest(new ApiResponse<ArticleDetailDto>
+            {
+                Success = false,
+                Message = "Kategorija nije pronađena"
+            });
+        }
+
         article.Title = request.Title;
         article.Content = request.Content;
         article.Summary = request.Summary;
         article.CategoryId = request.CategoryId;
         article.IsPublished = request.IsPublished;
-        
+
         if (request.IsPublished && article.PublishedAt == null)
         {
             article.PublishedAt = DateTime.UtcNow;
         }
-        
+
         article.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
+
+        // Reload article with updated relationships
+        var updatedArticle = await _context.Articles
+            .Include(a => a.Category)
+            .Include(a => a.Author)
+            .Include(a => a.Images)
+            .FirstAsync(a => a.Id == id);
 
         return Ok(new ApiResponse<ArticleDetailDto>
         {
@@ -299,17 +313,17 @@ public class ArticlesController : ControllerBase
             Message = "Članak je uspješno ažuriran",
             Data = new ArticleDetailDto
             {
-                Id = article.Id,
-                Title = article.Title,
-                Slug = article.Slug,
-                Content = article.Content,
-                Summary = article.Summary,
-                CategoryName = article.Category.Name,
-                CategorySlug = article.Category.Slug,
-                AuthorName = article.Author.FullName,
-                ViewCount = article.ViewCount,
-                PublishedAt = article.PublishedAt,
-                Images = article.Images.Select(i => new ImageDto
+                Id = updatedArticle.Id,
+                Title = updatedArticle.Title,
+                Slug = updatedArticle.Slug,
+                Content = updatedArticle.Content,
+                Summary = updatedArticle.Summary,
+                CategoryName = updatedArticle.Category.Name,
+                CategorySlug = updatedArticle.Category.Slug,
+                AuthorName = updatedArticle.Author.FullName,
+                ViewCount = updatedArticle.ViewCount,
+                PublishedAt = updatedArticle.PublishedAt,
+                Images = updatedArticle.Images.Select(i => new ImageDto
                 {
                     Id = i.Id,
                     FileName = i.FileName,

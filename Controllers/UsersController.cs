@@ -126,10 +126,10 @@ public class UsersController : ControllerBase
         var currentUserRole = User.Claims.FirstOrDefault(c => c.Type == "role")?.Value;
         var currentUserId = int.Parse(User.Claims.FirstOrDefault(c => c.Type == "userId")?.Value ?? "0");
 
-        // Check if username is being changed and if it already exists
+        // Update basic fields
         if (!string.IsNullOrEmpty(request.Username) && request.Username != user.Username)
         {
-            if (await _context.Users.AnyAsync(u => u.Username == request.Username))
+            if (await _context.Users.AnyAsync(u => u.Username == request.Username && u.Id != id))
             {
                 return BadRequest(new ApiResponse<UserDto>
                 {
@@ -140,10 +140,9 @@ public class UsersController : ControllerBase
             user.Username = request.Username;
         }
 
-        // Check if email is being changed and if it already exists
-        if (!string.IsNullOrEmpty(request.Email) && request.Email != user.Email)
+        if (request.Email != user.Email)
         {
-            if (await _context.Users.AnyAsync(u => u.Email == request.Email))
+            if (await _context.Users.AnyAsync(u => u.Email == request.Email && u.Id != id))
             {
                 return BadRequest(new ApiResponse<UserDto>
                 {
@@ -158,7 +157,7 @@ public class UsersController : ControllerBase
         user.IsActive = request.IsActive;
         user.UpdatedAt = DateTime.UtcNow;
 
-        // Handle role changes - only Owners can change roles
+        // Handle role changes
         if (!string.IsNullOrEmpty(request.Role) && request.Role != user.Role)
         {
             // Validate role
@@ -167,27 +166,7 @@ public class UsersController : ControllerBase
                 return BadRequest(new ApiResponse<UserDto>
                 {
                     Success = false,
-                    Message = "Nevažeća uloga. Dozvoljene uloge: Admin, Owner"
-                });
-            }
-
-            // Only Owners can change roles
-            if (currentUserRole != UserRoles.Owner)
-            {
-                return BadRequest(new ApiResponse<UserDto>
-                {
-                    Success = false,
-                    Message = "Samo Owner može mijenjati uloge korisnika"
-                });
-            }
-
-            // Prevent users from changing their own role
-            if (user.Id == currentUserId)
-            {
-                return BadRequest(new ApiResponse<UserDto>
-                {
-                    Success = false,
-                    Message = "Ne možete mijenjati svoju ulogu"
+                    Message = "Nevažeća uloga"
                 });
             }
 
@@ -234,17 +213,6 @@ public class UsersController : ControllerBase
             {
                 Success = false,
                 Message = "Ne možete obrisati svoj nalog"
-            });
-        }
-
-        // Prevent non-owners from deleting owners
-        var currentUserRole = User.Claims.FirstOrDefault(c => c.Type == "role")?.Value;
-        if (user.Role == UserRoles.Owner && currentUserRole != UserRoles.Owner)
-        {
-            return BadRequest(new ApiResponse<object>
-            {
-                Success = false,
-                Message = "Samo Owner može brisati druge Ownere"
             });
         }
 
