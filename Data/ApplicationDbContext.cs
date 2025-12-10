@@ -48,7 +48,6 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.Slug).IsRequired().HasMaxLength(500);
             entity.HasIndex(e => e.Slug).IsUnique();
             entity.Property(e => e.Content).IsRequired();
-            entity.Property(e => e.Summary).HasMaxLength(1000);
             
             entity.HasOne(e => e.Category)
                 .WithMany(c => c.Articles)

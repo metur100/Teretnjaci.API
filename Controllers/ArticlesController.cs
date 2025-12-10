@@ -57,7 +57,6 @@ public class ArticlesController : ControllerBase
                 Id = a.Id,
                 Title = a.Title,
                 Slug = a.Slug,
-                Summary = a.Summary,
                 CategoryName = a.Category.Name,
                 CategorySlug = a.Category.Slug,
                 AuthorName = a.Author.FullName,
@@ -124,7 +123,6 @@ public class ArticlesController : ControllerBase
                 Id = a.Id,
                 Title = a.Title,
                 Slug = a.Slug,
-                Summary = a.Summary,
                 CategoryName = a.Category.Name,
                 CategorySlug = a.Category.Slug,
                 AuthorName = a.Author.FullName,
@@ -181,7 +179,6 @@ public class ArticlesController : ControllerBase
                 Title = article.Title,
                 Slug = article.Slug,
                 Content = article.Content,
-                Summary = article.Summary,
                 CategoryName = article.Category.Name,
                 CategorySlug = article.Category.Slug,
                 AuthorName = article.Author.FullName,
@@ -217,7 +214,6 @@ public class ArticlesController : ControllerBase
             Title = request.Title,
             Slug = slug,
             Content = request.Content,
-            Summary = request.Summary,
             CategoryId = request.CategoryId,
             AuthorId = userId,
             IsPublished = request.IsPublished,
@@ -245,7 +241,6 @@ public class ArticlesController : ControllerBase
                 Title = createdArticle.Title,
                 Slug = createdArticle.Slug,
                 Content = createdArticle.Content,
-                Summary = createdArticle.Summary,
                 CategoryName = createdArticle.Category.Name,
                 CategorySlug = createdArticle.Category.Slug,
                 AuthorName = createdArticle.Author.FullName,
@@ -287,7 +282,6 @@ public class ArticlesController : ControllerBase
 
         article.Title = request.Title;
         article.Content = request.Content;
-        article.Summary = request.Summary;
         article.CategoryId = request.CategoryId;
         article.IsPublished = request.IsPublished;
 
@@ -317,7 +311,6 @@ public class ArticlesController : ControllerBase
                 Title = updatedArticle.Title,
                 Slug = updatedArticle.Slug,
                 Content = updatedArticle.Content,
-                Summary = updatedArticle.Summary,
                 CategoryName = updatedArticle.Category.Name,
                 CategorySlug = updatedArticle.Category.Slug,
                 AuthorName = updatedArticle.Author.FullName,
@@ -409,14 +402,13 @@ public class ArticlesController : ControllerBase
                 Title = article.Title,
                 Slug = article.Slug,
                 Content = article.Content,
-                Summary = article.Summary,
                 CategoryName = article.Category.Name,
                 CategorySlug = article.Category.Slug,
-                CategoryId = article.CategoryId, // Add this to ArticleDetailDto
+                CategoryId = article.CategoryId, 
                 AuthorName = article.Author.FullName,
                 ViewCount = article.ViewCount,
                 PublishedAt = article.PublishedAt,
-                IsPublished = article.IsPublished, // Add this to ArticleDetailDto
+                IsPublished = article.IsPublished,
                 Images = article.Images.Select(i => new ImageDto
                 {
                     Id = i.Id,

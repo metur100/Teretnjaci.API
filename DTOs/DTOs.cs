@@ -50,7 +50,6 @@ public class ArticleListDto
     public int Id { get; set; }
     public string Title { get; set; } = string.Empty;
     public string Slug { get; set; } = string.Empty;
-    public string? Summary { get; set; }
     public string CategoryName { get; set; } = string.Empty;
     public string CategorySlug { get; set; } = string.Empty;
     public string AuthorName { get; set; } = string.Empty;
@@ -67,7 +66,6 @@ public class ArticleDetailDto
     public string Title { get; set; } = string.Empty;
     public string Slug { get; set; } = string.Empty;
     public string Content { get; set; } = string.Empty;
-    public string? Summary { get; set; }
     public string CategoryName { get; set; } = string.Empty;
     public string CategorySlug { get; set; } = string.Empty;
     public int CategoryId { get; set; }
@@ -82,7 +80,6 @@ public class CreateArticleRequest
 {
     public string Title { get; set; } = string.Empty;
     public string Content { get; set; } = string.Empty;
-    public string? Summary { get; set; }
     public int CategoryId { get; set; }
     public bool IsPublished { get; set; } = true;
 }
@@ -91,7 +88,6 @@ public class UpdateArticleRequest
 {
     public string Title { get; set; } = string.Empty;
     public string Content { get; set; } = string.Empty;
-    public string? Summary { get; set; }
     public int CategoryId { get; set; }
     public bool IsPublished { get; set; }
 }
