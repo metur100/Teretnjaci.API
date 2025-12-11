@@ -50,10 +50,11 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("http://localhost:5173", 
+        policy.WithOrigins(
+            "http://localhost:5173", 
             "http://localhost:3000", 
             "https://teretnjaci.pages.dev", 
-            "https://99090807.teretnjaci.pages.dev")
+            "https://0c7209cc.teretnjaci.pages.dev/")
               .AllowAnyMethod()
               .AllowAnyHeader()
               .AllowCredentials();
@@ -74,7 +75,8 @@ app.UseSwaggerUI(c =>
 app.UseStaticFiles();
 
 app.UseCors("AllowFrontend");
-
+app.UseHttpsRedirection();
+app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
